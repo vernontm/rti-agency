@@ -262,7 +262,7 @@ const LandingPage = () => {
             Our Services
           </h2>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Independent Living Skills */}
             <div className="bg-gradient-to-br from-[rgba(13,71,97,0.95)] to-[rgba(8,51,68,0.98)] backdrop-blur-xl p-12 rounded-[30px] shadow-[0_20px_60px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] border border-white/10 relative overflow-hidden group hover:-translate-y-2.5 hover:shadow-[0_25px_70px_rgba(254,146,38,0.2),0_10px_30px_rgba(0,0,0,0.4)] hover:border-[#fe9226]/30 transition-all duration-400">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#fe9226] via-[#ffb366] to-[#00b8d4] opacity-80" />
@@ -320,6 +320,26 @@ const LandingPage = () => {
                   'Assisting family members to enable an individual with intellectual disabilities to stay at home',
                   "Providing appropriate care and supervision to protect that person's safety in the absence of a family member(s)",
                   'Relieving family members from the constantly demanding responsibility of providing care'
+                ].map((item, i) => (
+                  <li key={i} className="text-white/90 pl-7 relative before:content-['◆'] before:absolute before:left-0 before:text-[#fe9226] before:text-sm hover:text-white hover:pl-9 hover:translate-x-1 transition-all">{item}</li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Coordinated Family Support */}
+            <div className="bg-gradient-to-br from-[rgba(13,71,97,0.95)] to-[rgba(8,51,68,0.98)] backdrop-blur-xl p-12 rounded-[30px] shadow-[0_20px_60px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] border border-white/10 relative overflow-hidden group hover:-translate-y-2.5 hover:shadow-[0_25px_70px_rgba(254,146,38,0.2),0_10px_30px_rgba(0,0,0,0.4)] hover:border-[#fe9226]/30 transition-all duration-400">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#fe9226] via-[#ffb366] to-[#00b8d4] opacity-80" />
+              <h3 className="text-2xl font-bold text-white mb-8 drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
+                <span className="bg-gradient-to-br from-[#fe9226] to-[#ffb366] bg-clip-text text-transparent">Coordinated</span> Family Support
+              </h3>
+              <p className="text-white/80 text-sm mb-6">Helping individuals with developmental disabilities and their families navigate, organize, and manage services and daily supports.</p>
+              <ul className="space-y-3">
+                {[
+                  'Help coordinate services and supports',
+                  'Assist with planning, organizing, and accessing community resources',
+                  'Provide guidance on managing appointments, services, and programs',
+                  'Support families in understanding and following the Individual Program Plan (IPP)',
+                  'Help reduce stress and improve stability in the home'
                 ].map((item, i) => (
                   <li key={i} className="text-white/90 pl-7 relative before:content-['◆'] before:absolute before:left-0 before:text-[#fe9226] before:text-sm hover:text-white hover:pl-9 hover:translate-x-1 transition-all">{item}</li>
                 ))}

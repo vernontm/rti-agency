@@ -11,6 +11,7 @@ const POSITIONS = [
   'Independent Living Skills Trainer',
   'Supported Living Specialist',
   'Respite Care Provider',
+  'Coordinated Family Support (CFS) Staff',
   'Program Coordinator',
   'Case Manager',
   'Other'
@@ -162,6 +163,21 @@ const JobsPage = () => {
           <p className="text-xl text-white/90 max-w-2xl mx-auto">
             Make a difference in the lives of individuals with special needs. We're looking for compassionate, dedicated caregivers to join our team.
           </p>
+        </div>
+      </section>
+
+      {/* Position Descriptions */}
+      <section className="py-12 bg-gray-100">
+        <div className="max-w-4xl mx-auto px-4">
+          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Open Positions</h2>
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl p-6 shadow-md">
+              <h3 className="text-xl font-bold text-[#003d5c] mb-3">Coordinated Family Support (CFS) Staff</h3>
+              <p className="text-gray-700 leading-relaxed">
+                Coordinated Family Support Staff works with the individual and their family to organize, coordinate, and manage services and supports in order to promote stability, consistency, and successful use of Regional Center and community resources. Because managing services and supports can be complex and ongoing, Coordinated Family Support services are offered as long and as often as needed, with the flexibility required to meet a family's changing needs over time, focusing on guidance, planning, and coordination rather than direct care.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
