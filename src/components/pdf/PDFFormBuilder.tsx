@@ -71,6 +71,11 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
         setPdfDoc(pdf)
         setTotalPages(pdf.numPages)
         setCurrentPage(1)
+        
+        // Auto-detect form fields from PDF
+        if (fields.length === 0) {
+          await extractFormFields(pdf)
+        }
       } catch (error) {
         console.error('Error loading PDF:', error)
         toast.error('Failed to load PDF')
@@ -79,6 +84,61 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
 
     loadPdf()
   }, [pdfUrl])
+
+  // Extract existing form fields from PDF
+  const extractFormFields = async (pdf: pdfjsLib.PDFDocumentProxy) => {
+    const detectedFields: PDFFormField[] = []
+    
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum)
+      const annotations = await page.getAnnotations()
+      const viewport = page.getViewport({ scale })
+      
+      for (const annotation of annotations) {
+        if (annotation.subtype === 'Widget') {
+          const fieldType = mapAnnotationType(annotation.fieldType)
+          if (fieldType) {
+            const rect = annotation.rect
+            // Convert PDF coordinates to canvas coordinates
+            const [x1, y1, x2, y2] = rect
+            const transformedX = x1 * scale
+            const transformedY = viewport.height - (y2 * scale)
+            const width = (x2 - x1) * scale
+            const height = (y2 - y1) * scale
+            
+            detectedFields.push({
+              id: `field_${Date.now()}_${detectedFields.length}`,
+              name: annotation.fieldName || `field_${detectedFields.length + 1}`,
+              label: annotation.alternativeText || annotation.fieldName || `Field ${detectedFields.length + 1}`,
+              type: fieldType,
+              x: Math.max(0, transformedX),
+              y: Math.max(0, transformedY),
+              width: Math.max(20, width),
+              height: Math.max(20, height),
+              page: pageNum,
+              required: annotation.required || false,
+            })
+          }
+        }
+      }
+    }
+    
+    if (detectedFields.length > 0) {
+      setFields(detectedFields)
+      toast.success(`Auto-detected ${detectedFields.length} form fields`)
+    }
+  }
+
+  // Map PDF annotation field types to our field types
+  const mapAnnotationType = (fieldType: string): PDFFormField['type'] | null => {
+    switch (fieldType) {
+      case 'Tx': return 'text'
+      case 'Btn': return 'checkbox'
+      case 'Ch': return 'text' // Choice/dropdown -> text
+      case 'Sig': return 'signature'
+      default: return 'text'
+    }
+  }
 
   // Render current page
   useEffect(() => {
@@ -262,6 +322,27 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
               </button>
             ))}
           </div>
+          {pdfUrl && pdfDoc && (
+            <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+              <button
+                onClick={() => extractFormFields(pdfDoc)}
+                className="w-full px-3 py-2 text-sm bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+              >
+                Re-detect Fields
+              </button>
+              {fields.length > 0 && (
+                <button
+                  onClick={() => {
+                    setFields([])
+                    setSelectedField(null)
+                  }}
+                  className="w-full px-3 py-2 text-sm bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                >
+                  Clear All Fields
+                </button>
+              )}
+            </div>
+          )}
         </Card>
 
         {selectedFieldData && (
