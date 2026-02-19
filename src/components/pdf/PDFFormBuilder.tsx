@@ -85,7 +85,7 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
     loadPdf()
   }, [pdfUrl])
 
-  // Extract existing form fields from PDF
+  // Extract existing form fields from PDF (AcroForm fields + text pattern detection)
   const extractFormFields = async (pdf: pdfjsLib.PDFDocumentProxy) => {
     const detectedFields: PDFFormField[] = []
     
@@ -94,12 +94,12 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
       const annotations = await page.getAnnotations()
       const viewport = page.getViewport({ scale })
       
+      // First try to detect AcroForm fields
       for (const annotation of annotations) {
         if (annotation.subtype === 'Widget') {
           const fieldType = mapAnnotationType(annotation.fieldType)
           if (fieldType) {
             const rect = annotation.rect
-            // Convert PDF coordinates to canvas coordinates
             const [x1, y1, x2, y2] = rect
             const transformedX = x1 * scale
             const transformedY = viewport.height - (y2 * scale)
@@ -121,11 +121,70 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
           }
         }
       }
+      
+      // If no AcroForm fields found, try text pattern detection
+      if (detectedFields.length === 0) {
+        const textContent = await page.getTextContent()
+        const textItems = textContent.items as Array<{ str: string; transform: number[]; width: number; height: number }>
+        
+        // Common form field patterns
+        const fieldPatterns = [
+          { pattern: /name/i, type: 'text' as const, label: 'Name' },
+          { pattern: /email/i, type: 'email' as const, label: 'Email' },
+          { pattern: /phone|tel|mobile/i, type: 'tel' as const, label: 'Phone' },
+          { pattern: /date|dob|birth/i, type: 'date' as const, label: 'Date' },
+          { pattern: /signature/i, type: 'signature' as const, label: 'Signature' },
+          { pattern: /address/i, type: 'text' as const, label: 'Address' },
+          { pattern: /city/i, type: 'text' as const, label: 'City' },
+          { pattern: /state/i, type: 'text' as const, label: 'State' },
+          { pattern: /zip|postal/i, type: 'text' as const, label: 'Zip Code' },
+          { pattern: /ssn|social security/i, type: 'text' as const, label: 'SSN' },
+          { pattern: /employer/i, type: 'text' as const, label: 'Employer' },
+          { pattern: /occupation|job|position/i, type: 'text' as const, label: 'Occupation' },
+        ]
+        
+        for (const item of textItems) {
+          const text = item.str.trim()
+          if (text.length < 2) continue
+          
+          // Check if text matches any field pattern
+          for (const { pattern, type, label } of fieldPatterns) {
+            if (pattern.test(text)) {
+              // Position field to the right of the label
+              const x = (item.transform[4] * scale) + (item.width * scale) + 10
+              const y = viewport.height - (item.transform[5] * scale) - 5
+              
+              // Avoid duplicates
+              const isDuplicate = detectedFields.some(f => 
+                Math.abs(f.y - y) < 20 && f.label.toLowerCase() === label.toLowerCase()
+              )
+              
+              if (!isDuplicate) {
+                detectedFields.push({
+                  id: `field_${Date.now()}_${detectedFields.length}`,
+                  name: label.toLowerCase().replace(/\s+/g, '_'),
+                  label: label,
+                  type: type,
+                  x: Math.max(0, Math.min(x, viewport.width - 150)),
+                  y: Math.max(0, y),
+                  width: type === 'signature' ? 200 : 150,
+                  height: type === 'signature' ? 50 : 24,
+                  page: pageNum,
+                  required: false,
+                })
+              }
+              break
+            }
+          }
+        }
+      }
     }
     
     if (detectedFields.length > 0) {
       setFields(detectedFields)
       toast.success(`Auto-detected ${detectedFields.length} form fields`)
+    } else {
+      toast('No fields detected. Add fields manually using the buttons above.', { icon: 'ℹ️' })
     }
   }
 
