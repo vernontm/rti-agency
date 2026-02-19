@@ -1,6 +1,5 @@
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
-import { Toaster } from 'react-hot-toast'
 
 const MainLayout = () => {
   return (
@@ -11,7 +10,6 @@ const MainLayout = () => {
           <Outlet />
         </div>
       </main>
-      <Toaster position="top-right" />
     </div>
   )
 }
