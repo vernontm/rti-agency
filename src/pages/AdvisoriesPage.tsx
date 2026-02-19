@@ -2,42 +2,56 @@ import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Card from '../components/ui/Card'
-import { FileText, ChevronLeft } from 'lucide-react'
+import { FileText, ChevronLeft, Download, AlertTriangle } from 'lucide-react'
 import Button from '../components/ui/Button'
 
-interface Advisory {
+interface Document {
   id: string
   title: string
   description: string | null
   pdf_url: string
   created_at: string
+  category: 'advisory' | 'download'
 }
 
-const AdvisoriesPage = () => {
-  const [advisories, setAdvisories] = useState<Advisory[]>([])
+const DocumentsPage = () => {
+  const [advisories, setAdvisories] = useState<Document[]>([])
+  const [downloads, setDownloads] = useState<Document[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedAdvisory, setSelectedAdvisory] = useState<Advisory | null>(null)
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null)
+  const [activeTab, setActiveTab] = useState<'advisories' | 'downloads'>('advisories')
   const location = useLocation()
 
   useEffect(() => {
-    fetchAdvisories()
+    fetchDocuments()
   }, [location.pathname])
 
-  const fetchAdvisories = async () => {
+  const fetchDocuments = async () => {
     try {
       const { data, error } = await supabase
         .from('advisories')
-        .select('id, title, description, pdf_url, created_at')
+        .select('id, title, description, pdf_url, created_at, category')
         .eq('is_visible', true)
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setAdvisories(data || [])
+      
+      const docs = (data || []).map(d => ({
+        ...d,
+        category: d.category || 'advisory'
+      }))
+      
+      setAdvisories(docs.filter(d => d.category === 'advisory'))
+      setDownloads(docs.filter(d => d.category === 'download'))
     } catch (error) {
-      console.error('Error fetching advisories:', error)
+      console.error('Error fetching documents:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDownload = (doc: Document) => {
+    window.open(doc.pdf_url, '_blank')
   }
 
   if (loading) {
@@ -48,72 +62,124 @@ const AdvisoriesPage = () => {
     )
   }
 
-  // Full-screen PDF viewer when advisory is selected
-  if (selectedAdvisory) {
+  // Full-screen viewer when document is selected
+  if (selectedDocument) {
     return (
       <div className="h-[calc(100vh-120px)] flex flex-col">
         <div className="flex items-center justify-between mb-4 bg-white p-3 rounded-lg shadow-sm">
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => setSelectedAdvisory(null)}>
+            <Button variant="outline" onClick={() => setSelectedDocument(null)}>
               <ChevronLeft className="w-4 h-4 mr-1" />
               Back
             </Button>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">{selectedAdvisory.title}</h2>
-              {selectedAdvisory.description && (
-                <p className="text-sm text-gray-500">{selectedAdvisory.description}</p>
+              <h2 className="text-lg font-semibold text-gray-900">{selectedDocument.title}</h2>
+              {selectedDocument.description && (
+                <p className="text-sm text-gray-500">{selectedDocument.description}</p>
               )}
             </div>
           </div>
-          <span className="text-sm text-gray-400">
-            {new Date(selectedAdvisory.created_at).toLocaleDateString()}
-          </span>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => handleDownload(selectedDocument)}>
+              <Download className="w-4 h-4 mr-1" />
+              Download
+            </Button>
+            <span className="text-sm text-gray-400">
+              {new Date(selectedDocument.created_at).toLocaleDateString()}
+            </span>
+          </div>
         </div>
         <div className="flex-1 bg-gray-100 rounded-lg overflow-hidden">
           <iframe
-            src={selectedAdvisory.pdf_url}
+            src={selectedDocument.pdf_url}
             className="w-full h-full"
-            title={selectedAdvisory.title}
+            title={selectedDocument.title}
           />
         </div>
       </div>
     )
   }
 
+  const currentDocs = activeTab === 'advisories' ? advisories : downloads
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Advisories</h1>
-        <p className="text-gray-600">Important documents and announcements</p>
+        <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
+        <p className="text-gray-600">Advisories and downloadable resources</p>
       </div>
 
-      {advisories.length === 0 ? (
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('advisories')}
+          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+            activeTab === 'advisories'
+              ? 'border-orange-500 text-orange-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            Advisories ({advisories.length})
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab('downloads')}
+          className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+            activeTab === 'downloads'
+              ? 'border-orange-500 text-orange-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Download className="w-4 h-4" />
+            Downloads ({downloads.length})
+          </div>
+        </button>
+      </div>
+
+      {currentDocs.length === 0 ? (
         <Card className="p-12 text-center">
           <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Advisories Available</h3>
-          <p className="text-gray-500">Check back later for new advisories.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            No {activeTab === 'advisories' ? 'Advisories' : 'Downloads'} Available
+          </h3>
+          <p className="text-gray-500">Check back later for new documents.</p>
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {advisories.map((advisory) => (
+          {currentDocs.map((doc) => (
             <Card
-              key={advisory.id}
+              key={doc.id}
               className="p-4 hover:shadow-lg transition-shadow cursor-pointer group"
-              onClick={() => setSelectedAdvisory(advisory)}
+              onClick={() => setSelectedDocument(doc)}
             >
               <div className="flex items-start gap-3">
-                <div className="p-3 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
-                  <FileText className="w-6 h-6 text-orange-600" />
+                <div className={`p-3 rounded-lg transition-colors ${
+                  activeTab === 'advisories' 
+                    ? 'bg-orange-100 group-hover:bg-orange-200' 
+                    : 'bg-blue-100 group-hover:bg-blue-200'
+                }`}>
+                  {activeTab === 'advisories' ? (
+                    <AlertTriangle className="w-6 h-6 text-orange-600" />
+                  ) : (
+                    <Download className="w-6 h-6 text-blue-600" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 group-hover:text-orange-600 transition-colors">
-                    {advisory.title}
+                  <h3 className={`font-semibold text-gray-900 transition-colors ${
+                    activeTab === 'advisories' 
+                      ? 'group-hover:text-orange-600' 
+                      : 'group-hover:text-blue-600'
+                  }`}>
+                    {doc.title}
                   </h3>
-                  {advisory.description && (
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">{advisory.description}</p>
+                  {doc.description && (
+                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">{doc.description}</p>
                   )}
                   <p className="text-xs text-gray-400 mt-2">
-                    {new Date(advisory.created_at).toLocaleDateString()}
+                    {new Date(doc.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -125,4 +191,4 @@ const AdvisoriesPage = () => {
   )
 }
 
-export default AdvisoriesPage
+export default DocumentsPage

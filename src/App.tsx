@@ -79,9 +79,9 @@ function App() {
           <Route path="admin/pending-users" element={<PendingUsersPage />} />
           <Route path="admin/job-applications" element={<JobApplicationsPage />} />
           <Route path="admin/inbox" element={<InboxPage />} />
-          <Route path="admin/advisories" element={<AdvisoriesManagementPage />} />
+          <Route path="admin/documents" element={<AdvisoriesManagementPage />} />
           <Route path="admin/archives" element={<ArchivesPage />} />
-          <Route path="advisories" element={<AdvisoriesPage />} />
+          <Route path="documents" element={<AdvisoriesPage />} />
         </Route>
 
         {/* Catch all */}

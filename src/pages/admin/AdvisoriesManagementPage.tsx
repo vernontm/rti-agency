@@ -17,6 +17,7 @@ interface Advisory {
   uploaded_by: string | null
   created_at: string
   updated_at: string
+  category: 'advisory' | 'download'
 }
 
 const AdvisoriesManagementPage = () => {
@@ -26,7 +27,7 @@ const AdvisoriesManagementPage = () => {
   const [uploading, setUploading] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [selectedAdvisory, setSelectedAdvisory] = useState<Advisory | null>(null)
-  const [newAdvisory, setNewAdvisory] = useState({ title: '', description: '' })
+  const [newAdvisory, setNewAdvisory] = useState({ title: '', description: '', category: 'advisory' as 'advisory' | 'download' })
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const location = useLocation()
@@ -103,6 +104,7 @@ const AdvisoriesManagementPage = () => {
           pdf_url: urlData.publicUrl,
           uploaded_by: profile?.id,
           is_visible: false,
+          category: newAdvisory.category,
         })
         .select()
 
@@ -115,7 +117,7 @@ const AdvisoriesManagementPage = () => {
 
       toast.success('Advisory uploaded successfully')
       setShowUploadModal(false)
-      setNewAdvisory({ title: '', description: '' })
+      setNewAdvisory({ title: '', description: '', category: 'advisory' })
       setSelectedFile(null)
       // Reset file input
       if (fileInputRef.current) {
@@ -303,7 +305,7 @@ const AdvisoriesManagementPage = () => {
               <button
                 onClick={() => {
                   setShowUploadModal(false)
-                  setNewAdvisory({ title: '', description: '' })
+                  setNewAdvisory({ title: '', description: '', category: 'advisory' })
                   setSelectedFile(null)
                 }}
                 className="p-2 hover:bg-gray-100 rounded-lg"
@@ -329,6 +331,17 @@ const AdvisoriesManagementPage = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   rows={3}
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                <select
+                  value={newAdvisory.category}
+                  onChange={(e) => setNewAdvisory(prev => ({ ...prev, category: e.target.value as 'advisory' | 'download' }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                >
+                  <option value="advisory">Advisory</option>
+                  <option value="download">Download</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">File *</label>
@@ -362,7 +375,7 @@ const AdvisoriesManagementPage = () => {
                 variant="outline"
                 onClick={() => {
                   setShowUploadModal(false)
-                  setNewAdvisory({ title: '', description: '' })
+                  setNewAdvisory({ title: '', description: '', category: 'advisory' })
                   setSelectedFile(null)
                 }}
                 className="flex-1"

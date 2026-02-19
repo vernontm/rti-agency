@@ -172,7 +172,7 @@ const Sidebar = () => {
       items: [
         { to: '/training', icon: Video, label: 'Training', roles: ['admin', 'employee', 'client'] },
         { to: '/educator-area', icon: FileText, label: 'Forms', roles: ['admin', 'employee'] },
-        { to: '/advisories', icon: AlertTriangle, label: 'Advisories', roles: ['admin', 'employee'] },
+        { to: '/documents', icon: FileText, label: 'Documents', roles: ['admin', 'employee'] },
       ]
     },
     {
@@ -182,7 +182,7 @@ const Sidebar = () => {
       items: [
         { to: '/admin/inbox', icon: Inbox, label: 'Inbox', roles: ['admin'] },
         { to: '/users', icon: Users, label: 'Users', roles: ['admin'] },
-        { to: '/admin/advisories', icon: AlertTriangle, label: 'Advisories', roles: ['admin'] },
+        { to: '/admin/documents', icon: FileText, label: 'Documents', roles: ['admin'] },
         { to: '/admin/archives', icon: FileText, label: 'Archives', roles: ['admin'] },
       ]
     },
