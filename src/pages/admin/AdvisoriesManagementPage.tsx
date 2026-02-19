@@ -34,6 +34,7 @@ const AdvisoriesManagementPage = () => {
   const location = useLocation()
 
   useEffect(() => {
+    setLoading(true)
     fetchAdvisories()
   }, [location.pathname])
 

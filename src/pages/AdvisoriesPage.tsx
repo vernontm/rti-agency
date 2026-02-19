@@ -23,6 +23,7 @@ const DocumentsPage = () => {
   const location = useLocation()
 
   useEffect(() => {
+    setLoading(true)
     fetchDocuments()
   }, [location.pathname])
 
