@@ -116,6 +116,10 @@ const AdvisoriesManagementPage = () => {
       setShowUploadModal(false)
       setNewAdvisory({ title: '', description: '' })
       setSelectedFile(null)
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
       fetchAdvisories()
     } catch (error) {
       console.error('Error uploading advisory:', error)
