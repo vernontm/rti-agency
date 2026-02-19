@@ -71,11 +71,6 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
         setPdfDoc(pdf)
         setTotalPages(pdf.numPages)
         setCurrentPage(1)
-        
-        // Auto-detect form fields from PDF
-        if (fields.length === 0) {
-          await extractFormFields(pdf)
-        }
       } catch (error) {
         console.error('Error loading PDF:', error)
         toast.error('Failed to load PDF')
