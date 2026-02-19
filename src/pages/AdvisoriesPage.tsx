@@ -11,7 +11,7 @@ interface Document {
   description: string | null
   pdf_url: string
   created_at: string
-  category: 'advisory' | 'download'
+  category: 'advisory' | 'downloads'
 }
 
 const DocumentsPage = () => {
@@ -42,7 +42,7 @@ const DocumentsPage = () => {
       }))
       
       setAdvisories(docs.filter(d => d.category === 'advisory'))
-      setDownloads(docs.filter(d => d.category === 'download'))
+      setDownloads(docs.filter(d => d.category === 'downloads'))
     } catch (error) {
       console.error('Error fetching documents:', error)
     } finally {

@@ -17,7 +17,7 @@ interface Advisory {
   uploaded_by: string | null
   created_at: string
   updated_at: string
-  category: 'advisory' | 'download'
+  category: 'advisory' | 'downloads'
 }
 
 const AdvisoriesManagementPage = () => {
@@ -27,8 +27,9 @@ const AdvisoriesManagementPage = () => {
   const [uploading, setUploading] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [selectedAdvisory, setSelectedAdvisory] = useState<Advisory | null>(null)
-  const [newAdvisory, setNewAdvisory] = useState({ title: '', description: '', category: 'advisory' as 'advisory' | 'download' })
+  const [newAdvisory, setNewAdvisory] = useState({ title: '', description: '', category: 'advisory' as 'advisory' | 'downloads' })
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const location = useLocation()
 
@@ -72,21 +73,46 @@ const AdvisoriesManagementPage = () => {
     }
 
     setUploading(true)
+    setUploadProgress(0)
     try {
-      // Upload PDF to storage
+      // Upload file to storage with progress tracking
       const fileName = `${Date.now()}-${selectedFile.name}`
       console.log('Uploading file:', fileName)
       
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('advisories')
-        .upload(fileName, selectedFile)
-
-      console.log('Upload result:', { uploadData, uploadError })
-
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError)
-        throw uploadError
-      }
+      // Use XMLHttpRequest for progress tracking
+      const uploadPromise = new Promise<string>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        const formData = new FormData()
+        formData.append('', selectedFile)
+        
+        xhr.upload.addEventListener('progress', (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100)
+            setUploadProgress(percent)
+          }
+        })
+        
+        xhr.addEventListener('load', () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(fileName)
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`))
+          }
+        })
+        
+        xhr.addEventListener('error', () => reject(new Error('Upload failed')))
+        
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+        
+        xhr.open('POST', `${supabaseUrl}/storage/v1/object/advisories/${fileName}`)
+        xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`)
+        xhr.setRequestHeader('x-upsert', 'true')
+        xhr.send(selectedFile)
+      })
+      
+      await uploadPromise
+      console.log('Upload complete')
 
       // Get public URL
       const { data: urlData } = supabase.storage
@@ -336,11 +362,11 @@ const AdvisoriesManagementPage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
                 <select
                   value={newAdvisory.category}
-                  onChange={(e) => setNewAdvisory(prev => ({ ...prev, category: e.target.value as 'advisory' | 'download' }))}
+                  onChange={(e) => setNewAdvisory(prev => ({ ...prev, category: e.target.value as 'advisory' | 'downloads' }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 >
                   <option value="advisory">Advisory</option>
-                  <option value="download">Download</option>
+                  <option value="downloads">Downloads</option>
                 </select>
               </div>
               <div>
@@ -369,6 +395,22 @@ const AdvisoriesManagementPage = () => {
                   )}
                 </div>
               </div>
+              
+              {/* Upload Progress */}
+              {uploading && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Uploading...</span>
+                    <span className="font-medium text-orange-600">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="bg-orange-500 h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex gap-3 p-4 border-t bg-gray-50">
               <Button
@@ -377,18 +419,20 @@ const AdvisoriesManagementPage = () => {
                   setShowUploadModal(false)
                   setNewAdvisory({ title: '', description: '', category: 'advisory' })
                   setSelectedFile(null)
+                  setUploadProgress(0)
                 }}
                 className="flex-1"
+                disabled={uploading}
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleUpload}
                 loading={uploading}
-                disabled={!selectedFile || !newAdvisory.title.trim()}
+                disabled={!selectedFile || !newAdvisory.title.trim() || uploading}
                 className="flex-1"
               >
-                Upload
+                {uploading ? `Uploading ${uploadProgress}%` : 'Upload'}
               </Button>
             </div>
           </div>
