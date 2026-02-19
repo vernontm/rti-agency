@@ -55,8 +55,9 @@ const AdvisoriesManagementPage = () => {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.type !== 'application/pdf') {
-        toast.error('Please select a PDF file')
+      const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'application/zip', 'application/x-zip-compressed']
+      if (!allowedTypes.includes(file.type)) {
+        toast.error('Please select a PDF, PNG, JPEG, or ZIP file')
         return
       }
       setSelectedFile(file)
@@ -65,7 +66,7 @@ const AdvisoriesManagementPage = () => {
 
   const handleUpload = async () => {
     if (!selectedFile || !newAdvisory.title.trim()) {
-      toast.error('Please provide a title and select a PDF file')
+      toast.error('Please provide a title and select a file')
       return
     }
 
@@ -330,11 +331,11 @@ const AdvisoriesManagementPage = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">PDF File *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">File *</label>
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf"
+                  accept=".pdf,.png,.jpeg,.jpg,.zip"
                   onChange={handleFileSelect}
                   className="hidden"
                 />
@@ -350,7 +351,7 @@ const AdvisoriesManagementPage = () => {
                   ) : (
                     <div className="text-gray-500">
                       <Upload className="w-8 h-8 mx-auto mb-2" />
-                      <p>Click to select PDF file</p>
+                      <p>Click to select file (PDF, PNG, JPEG, ZIP)</p>
                     </div>
                   )}
                 </div>
