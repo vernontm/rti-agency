@@ -182,7 +182,7 @@ const Sidebar = () => {
       items: [
         { to: '/admin/inbox', icon: Inbox, label: 'Inbox', roles: ['admin'] },
         { to: '/users', icon: Users, label: 'Users', roles: ['admin'] },
-        { to: '/admin/documents', icon: FileText, label: 'Documents', roles: ['admin'] },
+        { to: '/admin/file-manager', icon: FileText, label: 'File Manager', roles: ['admin'] },
         { to: '/admin/archives', icon: FileText, label: 'Archives', roles: ['admin'] },
       ]
     },

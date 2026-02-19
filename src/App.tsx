@@ -79,7 +79,7 @@ function App() {
           <Route path="admin/pending-users" element={<PendingUsersPage />} />
           <Route path="admin/job-applications" element={<JobApplicationsPage />} />
           <Route path="admin/inbox" element={<InboxPage />} />
-          <Route path="admin/documents" element={<AdvisoriesManagementPage />} />
+          <Route path="admin/file-manager" element={<AdvisoriesManagementPage />} />
           <Route path="admin/archives" element={<ArchivesPage />} />
           <Route path="documents" element={<AdvisoriesPage />} />
         </Route>

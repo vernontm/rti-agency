@@ -195,12 +195,12 @@ const AdvisoriesManagementPage = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Advisories Management</h1>
-          <p className="text-gray-600">Upload and manage PDF advisories for educators</p>
+          <h1 className="text-2xl font-bold text-gray-900">File Manager</h1>
+          <p className="text-gray-600">Upload and manage advisories and downloads for educators</p>
         </div>
         <Button onClick={() => setShowUploadModal(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Upload Advisory
+          Upload File
         </Button>
       </div>
 
@@ -208,14 +208,14 @@ const AdvisoriesManagementPage = () => {
         {/* Advisories List */}
         <Card className="p-0 overflow-hidden">
           <div className="p-4 border-b bg-gray-50">
-            <h2 className="font-semibold text-gray-900">All Advisories</h2>
+            <h2 className="font-semibold text-gray-900">All Files</h2>
             <p className="text-sm text-gray-500">{advisories.length} total</p>
           </div>
           <div className="divide-y max-h-[600px] overflow-y-auto">
             {advisories.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
                 <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <p>No advisories uploaded yet</p>
+                <p>No files uploaded yet</p>
               </div>
             ) : (
               advisories.map((advisory) => (
@@ -301,7 +301,7 @@ const AdvisoriesManagementPage = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold">Upload Advisory</h2>
+              <h2 className="text-lg font-semibold">Upload File</h2>
               <button
                 onClick={() => {
                   setShowUploadModal(false)
