@@ -15,6 +15,7 @@ export interface PDFFormField {
   name: string
   label: string
   type: 'text' | 'email' | 'tel' | 'number' | 'date' | 'checkbox' | 'signature' | 'textarea'
+  // Coordinates are stored as percentages (0-100) relative to page dimensions
   x: number
   y: number
   width: number
@@ -55,6 +56,7 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
   const [formName, setFormName] = useState(initialFormName || '')
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 })
   
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -206,6 +208,7 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
 
       canvas.height = viewport.height
       canvas.width = viewport.width
+      setCanvasDimensions({ width: viewport.width, height: viewport.height })
 
       await page.render({
         canvasContext: context,
@@ -335,10 +338,22 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
       toast.error('Please add at least one field')
       return
     }
+    if (canvasDimensions.width === 0 || canvasDimensions.height === 0) {
+      toast.error('PDF not fully loaded')
+      return
+    }
 
     setSaving(true)
     try {
-      await onSave(pdfUrl, fields, formName)
+      // Convert pixel coordinates to percentages for storage
+      const normalizedFields = fields.map(field => ({
+        ...field,
+        x: (field.x / canvasDimensions.width) * 100,
+        y: (field.y / canvasDimensions.height) * 100,
+        width: (field.width / canvasDimensions.width) * 100,
+        height: (field.height / canvasDimensions.height) * 100,
+      }))
+      await onSave(pdfUrl, normalizedFields, formName)
     } finally {
       setSaving(false)
     }

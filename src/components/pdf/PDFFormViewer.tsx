@@ -31,6 +31,7 @@ const PDFFormViewer = ({ pdfUrl, fields, formName, onSubmit, readOnly = false, i
   const [totalPages, setTotalPages] = useState(0)
   const [scale, setScale] = useState(1.2)
   const [pageHeights, setPageHeights] = useState<number[]>([])
+  const [pageDimensions, setPageDimensions] = useState<{ width: number; height: number }[]>([])
   const [values, setValues] = useState<Record<string, FieldValue>>(initialValues as Record<string, FieldValue>)
   const [submitting, setSubmitting] = useState(false)
   const [activeSignatureField, setActiveSignatureField] = useState<string | null>(null)
@@ -86,6 +87,7 @@ const PDFFormViewer = ({ pdfUrl, fields, formName, onSubmit, readOnly = false, i
 
     const renderAllPages = async () => {
       const heights: number[] = []
+      const dimensions: { width: number; height: number }[] = []
       
       for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
         const canvas = canvasRefs.current[pageNum - 1]
@@ -98,6 +100,7 @@ const PDFFormViewer = ({ pdfUrl, fields, formName, onSubmit, readOnly = false, i
         canvas.height = viewport.height
         canvas.width = viewport.width
         heights.push(viewport.height)
+        dimensions.push({ width: viewport.width, height: viewport.height })
 
         await page.render({
           canvasContext: context,
@@ -107,6 +110,7 @@ const PDFFormViewer = ({ pdfUrl, fields, formName, onSubmit, readOnly = false, i
       }
       
       setPageHeights(heights)
+      setPageDimensions(dimensions)
     }
 
     renderAllPages()
@@ -276,6 +280,7 @@ const PDFFormViewer = ({ pdfUrl, fields, formName, onSubmit, readOnly = false, i
         >
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
             const pageFields = fields.filter(f => f.page === pageNum)
+            const pageDim = pageDimensions[pageNum - 1] || { width: 1, height: 1 }
             return (
               <div key={pageNum} className="relative">
                 <canvas
@@ -283,25 +288,33 @@ const PDFFormViewer = ({ pdfUrl, fields, formName, onSubmit, readOnly = false, i
                   className="shadow-lg"
                 />
                 {/* Field inputs overlay for this page */}
-                {pageFields.map((field) => (
-                  <div
-                    key={field.id}
-                    className={`absolute bg-white/90 border ${
-                      field.required && !values[field.id] 
-                        ? 'border-red-300' 
-                        : 'border-blue-300'
-                    } rounded overflow-hidden`}
-                    style={{
-                      left: field.x,
-                      top: field.y,
-                      width: field.width,
-                      height: field.height,
-                    }}
-                    title={`${field.label}${field.required ? ' (Required)' : ''}`}
-                  >
-                    {renderFieldInput(field)}
-                  </div>
-                ))}
+                {pageFields.map((field) => {
+                  // Convert percentage coordinates to pixels
+                  const pixelX = (field.x / 100) * pageDim.width
+                  const pixelY = (field.y / 100) * pageDim.height
+                  const pixelWidth = (field.width / 100) * pageDim.width
+                  const pixelHeight = (field.height / 100) * pageDim.height
+                  
+                  return (
+                    <div
+                      key={field.id}
+                      className={`absolute bg-white/90 border ${
+                        field.required && !values[field.id] 
+                          ? 'border-red-300' 
+                          : 'border-blue-300'
+                      } rounded overflow-hidden`}
+                      style={{
+                        left: pixelX,
+                        top: pixelY,
+                        width: pixelWidth,
+                        height: pixelHeight,
+                      }}
+                      title={`${field.label}${field.required ? ' (Required)' : ''}`}
+                    >
+                      {renderFieldInput(field)}
+                    </div>
+                  )
+                })}
               </div>
             )
           })}
