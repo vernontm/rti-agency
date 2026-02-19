@@ -62,10 +62,10 @@ const AdvisoriesManagementPage = () => {
         toast.error('Please select a PDF, PNG, JPEG, or ZIP file')
         return
       }
-      // Check file size (50MB limit)
-      const maxSize = 50 * 1024 * 1024
+      // Check file size (500MB limit)
+      const maxSize = 500 * 1024 * 1024
       if (file.size > maxSize) {
-        toast.error('File size must be less than 50MB')
+        toast.error('File size must be less than 500MB')
         return
       }
       setSelectedFile(file)
