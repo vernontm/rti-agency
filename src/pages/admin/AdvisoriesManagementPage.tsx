@@ -73,19 +73,28 @@ const AdvisoriesManagementPage = () => {
     try {
       // Upload PDF to storage
       const fileName = `${Date.now()}-${selectedFile.name}`
-      const { error: uploadError } = await supabase.storage
+      console.log('Uploading file:', fileName)
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('advisories')
         .upload(fileName, selectedFile)
 
-      if (uploadError) throw uploadError
+      console.log('Upload result:', { uploadData, uploadError })
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError)
+        throw uploadError
+      }
 
       // Get public URL
       const { data: urlData } = supabase.storage
         .from('advisories')
         .getPublicUrl(fileName)
 
+      console.log('Public URL:', urlData.publicUrl)
+
       // Create advisory record
-      const { error: insertError } = await supabase
+      const { data: insertData, error: insertError } = await supabase
         .from('advisories')
         .insert({
           title: newAdvisory.title.trim(),
@@ -94,8 +103,14 @@ const AdvisoriesManagementPage = () => {
           uploaded_by: profile?.id,
           is_visible: false,
         })
+        .select()
 
-      if (insertError) throw insertError
+      console.log('Insert result:', { insertData, insertError })
+
+      if (insertError) {
+        console.error('Database insert error:', insertError)
+        throw insertError
+      }
 
       toast.success('Advisory uploaded successfully')
       setShowUploadModal(false)
