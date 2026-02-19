@@ -48,7 +48,8 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
   const [scale, setScale] = useState(1.2)
-  const [fields, setFields] = useState<PDFFormField[]>(initialFields || [])
+  const [fields, setFields] = useState<PDFFormField[]>([])
+  const [fieldsInitialized, setFieldsInitialized] = useState(false)
   const [selectedField, setSelectedField] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
@@ -209,6 +210,19 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
       canvas.height = viewport.height
       canvas.width = viewport.width
       setCanvasDimensions({ width: viewport.width, height: viewport.height })
+      
+      // Convert initial fields from percentages to pixels once canvas is ready
+      if (!fieldsInitialized && initialFields && initialFields.length > 0) {
+        const pixelFields = initialFields.map(field => ({
+          ...field,
+          x: (field.x / 100) * viewport.width,
+          y: (field.y / 100) * viewport.height,
+          width: (field.width / 100) * viewport.width,
+          height: (field.height / 100) * viewport.height,
+        }))
+        setFields(pixelFields)
+        setFieldsInitialized(true)
+      }
 
       await page.render({
         canvasContext: context,
