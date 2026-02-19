@@ -1,0 +1,158 @@
+import { create } from 'zustand'
+import { supabase } from '../lib/supabase'
+import type { Tables, UserRole } from '../types/database.types'
+import type { User, Session } from '@supabase/supabase-js'
+
+interface AuthState {
+  user: User | null
+  session: Session | null
+  profile: Tables<'users'> | null
+  loading: boolean
+  initialized: boolean
+  viewAsRole: UserRole | null
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>
+  signUp: (email: string, password: string, fullName: string, role?: UserRole) => Promise<{ error: Error | null }>
+  signOut: () => Promise<void>
+  resetPassword: (email: string) => Promise<{ error: Error | null }>
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>
+  fetchProfile: () => Promise<void>
+  initialize: () => Promise<void>
+  setViewAsRole: (role: UserRole | null) => void
+  getEffectiveRole: () => UserRole | undefined
+}
+
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: null,
+  session: null,
+  profile: null,
+  loading: false,
+  initialized: false,
+  viewAsRole: null,
+
+  initialize: async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        set({ user: session.user, session })
+        await get().fetchProfile()
+      }
+    } catch (error) {
+      console.error('Error initializing auth:', error)
+    } finally {
+      set({ initialized: true })
+    }
+
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      set({ user: session?.user ?? null, session })
+      if (session?.user) {
+        await get().fetchProfile()
+      } else {
+        set({ profile: null })
+      }
+    })
+  },
+
+  fetchProfile: async () => {
+    const { user } = get()
+    if (!user) return
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      console.error('Error fetching profile:', error)
+      return
+    }
+
+    set({ profile: data })
+  },
+
+  signIn: async (email: string, password: string) => {
+    set({ loading: true })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+      return { error: null }
+    } catch (error) {
+      return { error: error as Error }
+    } finally {
+      set({ loading: false })
+    }
+  },
+
+  signUp: async (email: string, password: string, fullName: string, role: UserRole = 'client') => {
+    set({ loading: true })
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: role,
+          },
+        },
+      })
+      if (error) throw error
+
+      return { error: null }
+    } catch (error) {
+      return { error: error as Error }
+    } finally {
+      set({ loading: false })
+    }
+  },
+
+  signOut: async () => {
+    set({ loading: true })
+    try {
+      await supabase.auth.signOut()
+      set({ user: null, session: null, profile: null })
+    } finally {
+      set({ loading: false })
+    }
+  },
+
+  resetPassword: async (email: string) => {
+    set({ loading: true })
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+      if (error) throw error
+      return { error: null }
+    } catch (error) {
+      return { error: error as Error }
+    } finally {
+      set({ loading: false })
+    }
+  },
+
+  updatePassword: async (newPassword: string) => {
+    set({ loading: true })
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) throw error
+      return { error: null }
+    } catch (error) {
+      return { error: error as Error }
+    } finally {
+      set({ loading: false })
+    }
+  },
+
+  setViewAsRole: (role: UserRole | null) => {
+    set({ viewAsRole: role })
+  },
+
+  getEffectiveRole: () => {
+    const { profile, viewAsRole } = get()
+    if (viewAsRole && profile?.role === 'admin') {
+      return viewAsRole
+    }
+    return profile?.role
+  },
+}))
