@@ -75,44 +75,34 @@ const AdvisoriesManagementPage = () => {
     setUploading(true)
     setUploadProgress(0)
     try {
-      // Upload file to storage with progress tracking
+      // Upload file to storage
       const fileName = `${Date.now()}-${selectedFile.name}`
       console.log('Uploading file:', fileName)
       
-      // Use XMLHttpRequest for progress tracking
-      const uploadPromise = new Promise<string>((resolve, reject) => {
-        const xhr = new XMLHttpRequest()
-        const formData = new FormData()
-        formData.append('', selectedFile)
-        
-        xhr.upload.addEventListener('progress', (event) => {
-          if (event.lengthComputable) {
-            const percent = Math.round((event.loaded / event.total) * 100)
-            setUploadProgress(percent)
+      // Simulate progress for better UX
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return 90
           }
+          return prev + 10
         })
-        
-        xhr.addEventListener('load', () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(fileName)
-          } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`))
-          }
-        })
-        
-        xhr.addEventListener('error', () => reject(new Error('Upload failed')))
-        
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-        
-        xhr.open('POST', `${supabaseUrl}/storage/v1/object/advisories/${fileName}`)
-        xhr.setRequestHeader('Authorization', `Bearer ${supabaseKey}`)
-        xhr.setRequestHeader('x-upsert', 'true')
-        xhr.send(selectedFile)
-      })
+      }, 200)
       
-      await uploadPromise
-      console.log('Upload complete')
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('advisories')
+        .upload(fileName, selectedFile)
+      
+      clearInterval(progressInterval)
+      setUploadProgress(100)
+      
+      console.log('Upload result:', { uploadData, uploadError })
+
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError)
+        throw uploadError
+      }
 
       // Get public URL
       const { data: urlData } = supabase.storage
