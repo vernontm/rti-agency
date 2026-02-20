@@ -54,14 +54,14 @@ export async function generateFilledPDF(
     if (!page) continue
     
     const pageHeight = page.getHeight()
+    const pageWidth = page.getWidth()
     
-    // Convert coordinates (our y is from top, pdf-lib y is from bottom)
-    // Also account for scale factor used in the viewer (1.2)
-    const scale = 1.2
-    const x = field.x / scale
-    const y = pageHeight - (field.y / scale) - (field.height / scale)
-    const width = field.width / scale
-    const height = field.height / scale
+    // Convert percentage coordinates to actual PDF coordinates
+    // Field coordinates are stored as percentages (0-100)
+    const x = (field.x / 100) * pageWidth
+    const y = pageHeight - ((field.y / 100) * pageHeight) - ((field.height / 100) * pageHeight)
+    const width = (field.width / 100) * pageWidth
+    const height = (field.height / 100) * pageHeight
     
     if (field.type === 'checkbox') {
       if (value === true) {
