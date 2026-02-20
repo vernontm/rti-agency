@@ -293,6 +293,22 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
     if (selectedField === id) setSelectedField(null)
   }
 
+  const duplicateField = (id: string) => {
+    const field = fields.find(f => f.id === id)
+    if (!field) return
+    
+    const newField: PDFFormField = {
+      ...field,
+      id: `field_${Date.now()}`,
+      name: `${field.name}_copy`,
+      label: `${field.label} (Copy)`,
+      x: field.x + 20,
+      y: field.y + 20,
+    }
+    setFields([...fields, newField])
+    setSelectedField(newField.id)
+  }
+
   const handleMouseDown = useCallback((e: React.MouseEvent, fieldId: string, isResize = false) => {
     e.stopPropagation()
     const field = fields.find(f => f.id === fieldId)
@@ -432,12 +448,22 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
           <Card>
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-gray-900">Field Properties</h3>
-              <button
-                onClick={() => deleteField(selectedFieldData.id)}
-                className="p-1 text-red-500 hover:bg-red-50 rounded"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => duplicateField(selectedFieldData.id)}
+                  className="p-1 text-blue-500 hover:bg-blue-50 rounded"
+                  title="Duplicate field"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                </button>
+                <button
+                  onClick={() => deleteField(selectedFieldData.id)}
+                  className="p-1 text-red-500 hover:bg-red-50 rounded"
+                  title="Delete field"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
             <div className="space-y-3">
               <Input
