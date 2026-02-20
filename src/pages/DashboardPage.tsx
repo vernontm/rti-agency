@@ -329,11 +329,11 @@ const DashboardPage = () => {
   const getActivityIcon = (type: RecentActivity['type']) => {
     switch (type) {
       case 'video_completed':
-        return <GraduationCap className="w-4 h-4 text-purple-600" />
+        return <GraduationCap className="w-4 h-4 text-orange-600" />
       case 'form_submitted':
         return <FileText className="w-4 h-4 text-orange-600" />
       case 'quiz_passed':
-        return <CheckCircle className="w-4 h-4 text-green-600" />
+        return <CheckCircle className="w-4 h-4 text-blue-600" />
       case 'user_registered':
         return <UserCheck className="w-4 h-4 text-blue-600" />
       default:
@@ -474,8 +474,8 @@ const DashboardPage = () => {
             {/* Training Videos */}
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Video className="w-5 h-5 text-purple-600" />
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Video className="w-5 h-5 text-orange-600" />
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Training Videos</p>
@@ -486,7 +486,7 @@ const DashboardPage = () => {
               </div>
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div 
-                  className="h-full bg-purple-500 rounded-full"
+                  className="h-full bg-orange-500 rounded-full"
                   style={{ width: `${stats.totalVideos > 0 ? (stats.completedVideos / stats.totalVideos) * 100 : 0}%` }}
                 />
               </div>
@@ -497,7 +497,7 @@ const DashboardPage = () => {
                 </p>
               )}
               {pendingVideos === 0 && stats.totalVideos > 0 && (
-                <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
                   <CheckCircle className="w-3 h-3" />
                   All videos completed!
                 </p>
@@ -529,8 +529,8 @@ const DashboardPage = () => {
             {/* Announcements */}
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Bell className="w-5 h-5 text-green-600" />
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Bell className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">New Announcements</p>
@@ -548,7 +548,7 @@ const DashboardPage = () => {
                   {stats.newAnnouncements} unread this week
                 </button>
               ) : (
-                <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
                   <CheckCircle className="w-3 h-3" />
                   All caught up!
                 </p>
@@ -709,14 +709,14 @@ const DashboardPage = () => {
               </button>
               <button 
                 onClick={() => navigate('/admin/videos')}
-                className="flex items-center gap-2 p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors"
+                className="flex items-center gap-2 p-3 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors"
               >
                 <Video className="w-5 h-5" />
                 <span className="text-sm font-medium">Upload Video</span>
               </button>
               <button 
                 onClick={() => navigate('/announcements')}
-                className="flex items-center gap-2 p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors"
+                className="flex items-center gap-2 p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
               >
                 <Bell className="w-5 h-5" />
                 <span className="text-sm font-medium">Announcements</span>
