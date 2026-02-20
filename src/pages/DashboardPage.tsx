@@ -579,26 +579,6 @@ const DashboardPage = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards
-          .filter((card) => card.show)
-          .map((card) => (
-            <Card key={card.title} className="relative overflow-hidden">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{card.title}</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">
-                    {card.value}
-                  </p>
-                </div>
-                <div className={`p-3 rounded-lg ${card.color}`}>
-                  <card.icon className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </Card>
-          ))}
-      </div>
-
       {/* Pending Items Section */}
       {isAdmin && (stats.pendingUsers > 0 || stats.pendingForms > 0) && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
