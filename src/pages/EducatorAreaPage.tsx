@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
-import { FileText, ExternalLink, X, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { FileText, ExternalLink, X, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import PDFFormViewer from '../components/pdf/PDFFormViewer'
 import type { PDFFormField } from '../components/pdf/PDFFormBuilder'
@@ -35,7 +35,9 @@ interface FormSubmissionWithForm {
 }
 
 const EducatorAreaPage = () => {
-  const { profile } = useAuthStore()
+  const { profile, getEffectiveRole } = useAuthStore()
+  const effectiveRole = getEffectiveRole()
+  const isAdmin = effectiveRole === 'admin'
   const [forms, setForms] = useState<Form[]>([])
   const [submissions, setSubmissions] = useState<FormSubmissionWithForm[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,12 +59,17 @@ const EducatorAreaPage = () => {
 
       if (formsError) throw formsError
 
-      // Fetch user's submissions
-      const { data: submissionsData, error: submissionsError } = await supabase
+      // Fetch submissions - admin sees all, others see only their own
+      let submissionsQuery = supabase
         .from('form_submissions')
         .select(`*, forms (*)`)
-        .eq('submitted_by', profile?.id)
         .order('submitted_at', { ascending: false })
+      
+      if (profile?.role !== 'admin') {
+        submissionsQuery = submissionsQuery.eq('submitted_by', profile?.id)
+      }
+      
+      const { data: submissionsData, error: submissionsError } = await submissionsQuery
 
       if (submissionsError) throw submissionsError
 
@@ -73,6 +80,37 @@ const EducatorAreaPage = () => {
       toast.error('Failed to load data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDeleteSubmission = async (submissionId: string, signedPdfUrl?: string | null) => {
+    if (!confirm('Are you sure you want to delete this submission? This action cannot be undone.')) {
+      return
+    }
+
+    try {
+      // Delete the signed PDF from storage if it exists
+      if (signedPdfUrl) {
+        const urlParts = signedPdfUrl.split('/forms/')
+        if (urlParts.length > 1) {
+          const filePath = urlParts[1]
+          await supabase.storage.from('forms').remove([filePath])
+        }
+      }
+
+      // Delete the submission record
+      const { error } = await supabase
+        .from('form_submissions')
+        .delete()
+        .eq('id', submissionId)
+
+      if (error) throw error
+
+      toast.success('Submission deleted')
+      fetchData()
+    } catch (error) {
+      console.error('Error deleting submission:', error)
+      toast.error('Failed to delete submission')
     }
   }
 
@@ -113,7 +151,7 @@ const EducatorAreaPage = () => {
         data: values,
         status: 'pending',
         signed_pdf_url: publicUrl,
-      })
+      } as any)
       if (error) throw error
 
       toast.dismiss('pdf-gen')
@@ -311,6 +349,15 @@ const EducatorAreaPage = () => {
                           <ExternalLink className="w-3 h-3" />
                           View PDF
                         </a>
+                      )}
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDeleteSubmission(submission.id, submission.signed_pdf_url)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete submission"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       )}
                     </div>
                   </div>
