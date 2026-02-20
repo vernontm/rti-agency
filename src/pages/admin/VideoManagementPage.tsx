@@ -197,6 +197,32 @@ const VideoManagementPage = () => {
     }
   }
 
+  const setVideoOrder = async (videoId: string, newPosition: number) => {
+    const categoryVideos = getVideosInCategory(selectedCategory)
+    const currentIndex = categoryVideos.findIndex(v => v.id === videoId)
+    if (currentIndex === -1 || newPosition < 1 || newPosition > categoryVideos.length) return
+    if (currentIndex === newPosition - 1) return // No change needed
+    
+    try {
+      // Reorder all videos in the category
+      const reorderedVideos = [...categoryVideos]
+      const [movedVideo] = reorderedVideos.splice(currentIndex, 1)
+      reorderedVideos.splice(newPosition - 1, 0, movedVideo)
+      
+      // Update all sort_order values
+      const updates = reorderedVideos.map((video, index) => 
+        supabase.from('videos').update({ sort_order: index + 1 } as any).eq('id', video.id)
+      )
+      
+      await Promise.all(updates)
+      await fetchVideos()
+      toast.success('Video order updated')
+    } catch (error) {
+      console.error('Error setting video order:', error)
+      toast.error('Failed to update video order')
+    }
+  }
+
   const getVideoMetadata = (file: File): Promise<{ duration: number; thumbnail: Blob | null }> => {
     return new Promise((resolve) => {
       const video = document.createElement('video')
@@ -450,7 +476,17 @@ const VideoManagementPage = () => {
                     <ArrowDown className="w-4 h-4" />
                   </button>
                 </div>
-                <span className="text-gray-400 font-mono text-sm w-6">{index + 1}</span>
+                <select
+                  value={index + 1}
+                  onChange={(e) => setVideoOrder(video.id, parseInt(e.target.value))}
+                  className="w-14 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  {Array.from({ length: arr.length }, (_, i) => i + 1).map((num) => (
+                    <option key={num} value={num}>
+                      {num}
+                    </option>
+                  ))}
+                </select>
                 {video.thumbnail_url && (
                   <img
                     src={video.thumbnail_url}
