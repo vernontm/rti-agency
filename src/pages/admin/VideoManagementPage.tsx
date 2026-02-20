@@ -5,7 +5,7 @@ import type { Tables } from '../../types/database.types'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import { Plus, Trash2, Edit2, Video, X, Save, Upload, Loader2, Play, HelpCircle } from 'lucide-react'
+import { Plus, Trash2, Edit2, Video, X, Save, Upload, Loader2, Play, HelpCircle, ArrowUp, ArrowDown, GripVertical } from 'lucide-react'
 import toast from 'react-hot-toast'
 import QuizEditor from '../../components/admin/QuizEditor'
 
@@ -39,6 +39,8 @@ const VideoManagementPage = () => {
   })
   const [playingVideo, setPlayingVideo] = useState<Tables<'videos'> | null>(null)
   const [editingQuizVideo, setEditingQuizVideo] = useState<Tables<'videos'> | null>(null)
+  const [reorderMode, setReorderMode] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   useEffect(() => {
     fetchVideos()
@@ -50,6 +52,7 @@ const VideoManagementPage = () => {
       const { data, error } = await supabase
         .from('videos')
         .select('*')
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -157,6 +160,41 @@ const VideoManagementPage = () => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const getVideosInCategory = (category: string | null) => {
+    return videos
+      .filter(v => v.category === category)
+      .sort((a, b) => ((a as any).sort_order || 0) - ((b as any).sort_order || 0))
+  }
+
+  const moveVideo = async (videoId: string, direction: 'up' | 'down') => {
+    const categoryVideos = getVideosInCategory(selectedCategory)
+    const currentIndex = categoryVideos.findIndex(v => v.id === videoId)
+    if (currentIndex === -1) return
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+    if (newIndex < 0 || newIndex >= categoryVideos.length) return
+    
+    const video1 = categoryVideos[currentIndex]
+    const video2 = categoryVideos[newIndex]
+    
+    try {
+      // Swap sort_order values
+      const order1 = (video1 as any).sort_order || currentIndex
+      const order2 = (video2 as any).sort_order || newIndex
+      
+      await Promise.all([
+        supabase.from('videos').update({ sort_order: order2 } as any).eq('id', video1.id),
+        supabase.from('videos').update({ sort_order: order1 } as any).eq('id', video2.id),
+      ])
+      
+      await fetchVideos()
+      toast.success('Video order updated')
+    } catch (error) {
+      console.error('Error reordering videos:', error)
+      toast.error('Failed to reorder videos')
+    }
   }
 
   const getVideoMetadata = (file: File): Promise<{ duration: number; thumbnail: Blob | null }> => {
@@ -345,11 +383,93 @@ const VideoManagementPage = () => {
           <h1 className="text-2xl font-bold text-gray-900">Video Management</h1>
           <p className="text-gray-600">Manage training videos</p>
         </div>
-        <Button onClick={openNewModal}>
-          <Plus className="w-4 h-4 mr-1" />
-          Add Video
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant={reorderMode ? 'primary' : 'outline'} 
+            onClick={() => setReorderMode(!reorderMode)}
+          >
+            <GripVertical className="w-4 h-4 mr-1" />
+            {reorderMode ? 'Done Reordering' : 'Reorder Videos'}
+          </Button>
+          <Button onClick={openNewModal}>
+            <Plus className="w-4 h-4 mr-1" />
+            Add Video
+          </Button>
+        </div>
       </div>
+
+      {/* Reorder Mode UI */}
+      {reorderMode && (
+        <Card>
+          <h3 className="font-semibold text-gray-900 mb-3">Reorder Videos by Category</h3>
+          <div className="flex gap-2 mb-4 flex-wrap">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.name)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  selectedCategory === cat.name
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {cat.name} ({getVideosInCategory(cat.name).length})
+              </button>
+            ))}
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                selectedCategory === null
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Uncategorized ({getVideosInCategory(null).length})
+            </button>
+          </div>
+          
+          <div className="space-y-2">
+            {getVideosInCategory(selectedCategory).map((video, index, arr) => (
+              <div
+                key={video.id}
+                className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+              >
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => moveVideo(video.id, 'up')}
+                    disabled={index === 0}
+                    className="p-1 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => moveVideo(video.id, 'down')}
+                    disabled={index === arr.length - 1}
+                    className="p-1 hover:bg-gray-200 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </button>
+                </div>
+                <span className="text-gray-400 font-mono text-sm w-6">{index + 1}</span>
+                {video.thumbnail_url && (
+                  <img
+                    src={video.thumbnail_url}
+                    alt=""
+                    className="w-16 h-10 object-cover rounded"
+                  />
+                )}
+                <div className="flex-1">
+                  <p className="font-medium text-gray-900">{video.title}</p>
+                  <p className="text-sm text-gray-500">{formatDuration(video.duration_seconds)}</p>
+                </div>
+              </div>
+            ))}
+            {getVideosInCategory(selectedCategory).length === 0 && (
+              <p className="text-gray-500 text-center py-4">No videos in this category</p>
+            )}
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {videos.map((video) => (

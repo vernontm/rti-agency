@@ -111,6 +111,7 @@ export interface Database {
           category: string | null
           is_required: boolean
           uploaded_by: string | null
+          sort_order: number
           created_at: string
         }
         Insert: {
@@ -123,6 +124,7 @@ export interface Database {
           category?: string | null
           is_required?: boolean
           uploaded_by?: string | null
+          sort_order?: number
           created_at?: string
         }
         Update: {
@@ -135,6 +137,7 @@ export interface Database {
           category?: string | null
           is_required?: boolean
           uploaded_by?: string | null
+          sort_order?: number
           created_at?: string
         }
       }
