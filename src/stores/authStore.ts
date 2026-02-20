@@ -63,22 +63,41 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  fetchProfile: async () => {
+  fetchProfile: async (retries = 3) => {
     const { user } = get()
     if (!user) return
 
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single()
 
-    if (error) {
-      console.error('Error fetching profile:', error)
-      return
+        if (error) {
+          // If it's an abort error, retry
+          if (error.message?.includes('AbortError') || error.code === '') {
+            if (attempt < retries - 1) {
+              await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
+              continue
+            }
+          }
+          console.error('Error fetching profile:', error)
+          return
+        }
+
+        set({ profile: data })
+        return
+      } catch (e: any) {
+        if (e?.name === 'AbortError' && attempt < retries - 1) {
+          await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
+          continue
+        }
+        console.error('Error fetching profile:', e)
+        return
+      }
     }
-
-    set({ profile: data })
   },
 
   signIn: async (email: string, password: string) => {
