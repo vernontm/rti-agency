@@ -37,7 +37,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     supabase.auth.onAuthStateChange(async (_event, session) => {
       set({ user: session?.user ?? null, session })
       if (session?.user) {
-        await get().fetchProfile()
+        try {
+          await get().fetchProfile()
+        } catch (e: any) {
+          if (e?.name !== 'AbortError') console.error('Error fetching profile:', e)
+        }
       } else {
         set({ profile: null })
       }

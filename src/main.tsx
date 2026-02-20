@@ -1,10 +1,12 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+// Suppress AbortError from Supabase during navigation/unmount
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason?.name === 'AbortError') {
+    event.preventDefault()
+  }
+})
+
+createRoot(document.getElementById('root')!).render(<App />)
