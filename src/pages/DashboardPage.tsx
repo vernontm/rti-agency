@@ -581,7 +581,7 @@ const DashboardPage = () => {
 
       {/* Pending Items Section */}
       {isAdmin && (stats.pendingUsers > 0 || stats.pendingForms > 0) && (
-        <div className="bg-gradient-to-br from-blue-900/40 via-gray-950/90 to-orange-900/40 backdrop-blur-xl border border-white/10 rounded-xl p-6 shadow-2xl">
+        <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-4">
             <AlertCircle className="w-6 h-6 text-orange-400" />
             <h2 className="text-lg font-semibold text-white">Items Requiring Attention</h2>
