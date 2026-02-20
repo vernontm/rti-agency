@@ -58,6 +58,7 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [canvasDimensions, setCanvasDimensions] = useState({ width: 0, height: 0 })
+  const [pageDimensions, setPageDimensions] = useState<Record<number, { width: number; height: number }>>({})
   
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -210,16 +211,29 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
       canvas.height = viewport.height
       canvas.width = viewport.width
       setCanvasDimensions({ width: viewport.width, height: viewport.height })
+      setPageDimensions(prev => ({ ...prev, [currentPage]: { width: viewport.width, height: viewport.height } }))
       
       // Convert initial fields from percentages to pixels once canvas is ready
       if (!fieldsInitialized && initialFields && initialFields.length > 0) {
-        const pixelFields = initialFields.map(field => ({
-          ...field,
-          x: (field.x / 100) * viewport.width,
-          y: (field.y / 100) * viewport.height,
-          width: (field.width / 100) * viewport.width,
-          height: (field.height / 100) * viewport.height,
-        }))
+        // Load all page dimensions first for accurate conversion
+        const allPageDims: Record<number, { width: number; height: number }> = {}
+        for (let p = 1; p <= pdfDoc.numPages; p++) {
+          const pg = await pdfDoc.getPage(p)
+          const vp = pg.getViewport({ scale })
+          allPageDims[p] = { width: vp.width, height: vp.height }
+        }
+        setPageDimensions(allPageDims)
+        
+        const pixelFields = initialFields.map(field => {
+          const dims = allPageDims[field.page] || { width: viewport.width, height: viewport.height }
+          return {
+            ...field,
+            x: (field.x / 100) * dims.width,
+            y: (field.y / 100) * dims.height,
+            width: (field.width / 100) * dims.width,
+            height: (field.height / 100) * dims.height,
+          }
+        })
         setFields(pixelFields)
         setFieldsInitialized(true)
       }
@@ -375,14 +389,17 @@ const PDFFormBuilder = ({ onSave, initialPdfUrl, initialFields, initialFormName 
 
     setSaving(true)
     try {
-      // Convert pixel coordinates to percentages for storage
-      const normalizedFields = fields.map(field => ({
-        ...field,
-        x: (field.x / canvasDimensions.width) * 100,
-        y: (field.y / canvasDimensions.height) * 100,
-        width: (field.width / canvasDimensions.width) * 100,
-        height: (field.height / canvasDimensions.height) * 100,
-      }))
+      // Convert pixel coordinates to percentages for storage using per-page dimensions
+      const normalizedFields = fields.map(field => {
+        const dims = pageDimensions[field.page] || canvasDimensions
+        return {
+          ...field,
+          x: (field.x / dims.width) * 100,
+          y: (field.y / dims.height) * 100,
+          width: (field.width / dims.width) * 100,
+          height: (field.height / dims.height) * 100,
+        }
+      })
       await onSave(pdfUrl, normalizedFields, formName)
     } finally {
       setSaving(false)
