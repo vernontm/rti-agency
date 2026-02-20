@@ -108,7 +108,24 @@ const CalendarPage = () => {
 
       if (error) throw error
 
-      toast.success('Note added')
+      // Create an announcement for the new calendar note
+      const formattedDate = new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+      })
+      
+      await supabase.from('announcements').insert({
+        title: `📅 Calendar Update: ${noteTitle.trim()}`,
+        content: noteDescription.trim() 
+          ? `${noteDescription.trim()}\n\nDate: ${formattedDate}`
+          : `A new calendar note has been added for ${formattedDate}.`,
+        created_by: profile?.id,
+        target_audience: 'all',
+        sent_at: new Date().toISOString(),
+      } as any)
+
+      toast.success('Note added and notification sent')
       setShowNoteModal(false)
       setNoteTitle('')
       setNoteDescription('')
