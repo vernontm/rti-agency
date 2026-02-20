@@ -581,7 +581,7 @@ const DashboardPage = () => {
 
       {/* Pending Items Section */}
       {isAdmin && (stats.pendingUsers > 0 || stats.pendingForms > 0) && (
-        <div className="bg-gray-900 border border-gray-700 rounded-xl p-6">
+        <div className="bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-4">
             <AlertCircle className="w-6 h-6 text-orange-400" />
             <h2 className="text-lg font-semibold text-white">Items Requiring Attention</h2>
@@ -709,7 +709,7 @@ const DashboardPage = () => {
               </button>
               <button 
                 onClick={() => navigate('/admin/videos')}
-                className="flex items-center gap-2 p-3 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors"
+                className="flex items-center gap-2 p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
               >
                 <Video className="w-5 h-5" />
                 <span className="text-sm font-medium">Upload Video</span>
@@ -723,7 +723,7 @@ const DashboardPage = () => {
               </button>
               <button 
                 onClick={() => navigate('/forms')}
-                className="flex items-center gap-2 p-3 bg-orange-50 text-orange-700 rounded-lg hover:bg-orange-100 transition-colors"
+                className="flex items-center gap-2 p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
               >
                 <FileText className="w-5 h-5" />
                 <span className="text-sm font-medium">Review Forms</span>
