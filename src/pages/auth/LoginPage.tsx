@@ -40,11 +40,11 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
+      <Card className="w-full max-w-md bg-blue-600 text-white">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">RTI Agency</h1>
-          <p className="text-gray-600 mt-2">Sign in to your account</p>
+          <h1 className="text-3xl font-bold text-white">RTI Agency</h1>
+          <p className="text-blue-100 mt-2">Sign in to your account</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -78,7 +78,7 @@ const LoginPage = () => {
           <div className="flex items-center justify-between">
             <Link
               to="/forgot-password"
-              className="text-sm text-orange-500 hover:text-orange-600"
+              className="text-sm text-blue-200 hover:text-white"
             >
               Forgot password?
             </Link>
@@ -89,9 +89,9 @@ const LoginPage = () => {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-blue-100">
           Don't have an account?{' '}
-          <Link to="/register" className="text-orange-500 hover:text-orange-600 font-medium">
+          <Link to="/register" className="text-white hover:text-blue-200 font-medium">
             Sign up
           </Link>
         </p>

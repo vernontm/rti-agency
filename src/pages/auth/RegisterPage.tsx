@@ -45,11 +45,11 @@ const RegisterPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
+      <Card className="w-full max-w-md bg-blue-600 text-white">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">RTI Agency</h1>
-          <p className="text-gray-600 mt-2">Create your account</p>
+          <h1 className="text-3xl font-bold text-white">RTI Agency</h1>
+          <p className="text-blue-100 mt-2">Create your account</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -103,9 +103,9 @@ const RegisterPage = () => {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-blue-100">
           Already have an account?{' '}
-          <Link to="/login" className="text-orange-500 hover:text-orange-600 font-medium">
+          <Link to="/login" className="text-white hover:text-blue-200 font-medium">
             Sign in
           </Link>
         </p>
