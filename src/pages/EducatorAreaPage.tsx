@@ -158,10 +158,11 @@ const EducatorAreaPage = () => {
       toast.success('Form submitted successfully!')
       setSelectedForm(null)
       fetchData()
-    } catch (error) {
+    } catch (error: any) {
       toast.dismiss('pdf-gen')
       console.error('Error submitting form:', error)
-      toast.error('Failed to submit form')
+      const errorMessage = error?.message || error?.error_description || 'Failed to submit form'
+      toast.error(errorMessage)
     }
   }
 

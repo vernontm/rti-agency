@@ -72,6 +72,7 @@ export interface Database {
           reviewed_by: string | null
           review_comment: string | null
           resume_url: string | null
+          signed_pdf_url: string | null
           submitted_at: string
           reviewed_at: string | null
         }
@@ -84,6 +85,7 @@ export interface Database {
           reviewed_by?: string | null
           review_comment?: string | null
           resume_url?: string | null
+          signed_pdf_url?: string | null
           submitted_at?: string
           reviewed_at?: string | null
         }
@@ -96,6 +98,7 @@ export interface Database {
           reviewed_by?: string | null
           review_comment?: string | null
           resume_url?: string | null
+          signed_pdf_url?: string | null
           submitted_at?: string
           reviewed_at?: string | null
         }
