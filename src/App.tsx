@@ -26,6 +26,7 @@ import AdvisoriesManagementPage from './pages/admin/AdvisoriesManagementPage'
 import ArchivesPage from './pages/admin/ArchivesPage'
 import EducatorAreaPage from './pages/EducatorAreaPage'
 import AdvisoriesPage from './pages/AdvisoriesPage'
+import CalendarPage from './pages/CalendarPage'
 import LandingPage from './pages/LandingPage'
 import JobsPage from './pages/JobsPage'
 import ContactPage from './pages/ContactPage'
@@ -72,6 +73,7 @@ function App() {
           <Route path="training" element={<TrainingPage />} />
           <Route path="announcements" element={<AnnouncementsPage />} />
           <Route path="educator-area" element={<EducatorAreaPage />} />
+          <Route path="calendar" element={<CalendarPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="admin/forms" element={<FormBuilderPage />} />
           <Route path="admin/videos" element={<VideoManagementPage />} />

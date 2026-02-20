@@ -18,6 +18,7 @@ import {
   GraduationCap,
   Inbox,
   AlertTriangle,
+  Calendar,
   type LucideIcon,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
@@ -173,6 +174,7 @@ const Sidebar = () => {
         { to: '/training', icon: Video, label: 'Training', roles: ['admin', 'employee', 'client'] },
         { to: '/educator-area', icon: FileText, label: 'Forms', roles: ['admin', 'employee'] },
         { to: '/documents', icon: FileText, label: 'Documents', roles: ['admin', 'employee'] },
+        { to: '/calendar', icon: Calendar, label: 'Calendar', roles: ['admin', 'employee'] },
       ]
     },
     {
