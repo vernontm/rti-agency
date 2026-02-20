@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import Card from '../components/ui/Card'
@@ -18,7 +18,13 @@ import {
   Eye,
   Target,
   Calendar,
+  StickyNote,
+  Save,
+  Briefcase,
+  GraduationCap,
+  MessageSquare,
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 interface PendingUser {
   id: string
@@ -36,6 +42,14 @@ interface PendingForm {
   users?: { full_name: string }
 }
 
+interface RecentActivity {
+  id: string
+  type: 'video_completed' | 'form_submitted' | 'quiz_passed' | 'user_registered'
+  description: string
+  user_name: string
+  timestamp: string
+}
+
 interface DashboardStats {
   pendingForms: number
   pendingUsers: number
@@ -45,18 +59,15 @@ interface DashboardStats {
   trainingCompletion: number
   pendingUsersList: PendingUser[]
   pendingFormsList: PendingForm[]
-  recentActivity: Array<{
-    id: string
-    type: string
-    description: string
-    timestamp: string
-  }>
+  recentActivity: RecentActivity[]
   // Employee-specific stats
   totalVideos: number
   completedVideos: number
   totalDocuments: number
   viewedDocuments: number
   newAnnouncements: number
+  // Admin stats
+  pendingApplications: number
 }
 
 const DashboardPage = () => {
@@ -78,8 +89,12 @@ const DashboardPage = () => {
     totalDocuments: 0,
     viewedDocuments: 0,
     newAnnouncements: 0,
+    pendingApplications: 0,
   })
   const [loading, setLoading] = useState(true)
+  const [adminNotes, setAdminNotes] = useState('')
+  const [savingNotes, setSavingNotes] = useState(false)
+  const notesTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     setLoading(true)
@@ -152,6 +167,98 @@ const DashboardPage = () => {
       // Calculate training completion percentage
       const trainingCompletion = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0
 
+      // Fetch recent employee activity for admin dashboard
+      let recentActivity: RecentActivity[] = []
+      let pendingApplications = 0
+
+      if (effectiveRole === 'admin') {
+        // Get pending job applications
+        const { count: appCount } = await supabase
+          .from('form_submissions')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending')
+        pendingApplications = appCount || 0
+
+        // Get recent video completions
+        const { data: recentCompletions } = await supabase
+          .from('video_progress')
+          .select('id, completed_at, user_id, video_id, users(full_name), videos(title)')
+          .eq('completed', true)
+          .order('completed_at', { ascending: false })
+          .limit(5)
+
+        // Get recent form submissions
+        const { data: recentSubmissions } = await supabase
+          .from('form_submissions')
+          .select('id, submitted_at, user_id, form_id, users(full_name), forms(form_name)')
+          .order('submitted_at', { ascending: false })
+          .limit(5)
+
+        // Get recent user registrations
+        const { data: recentUsers } = await supabase
+          .from('users')
+          .select('id, full_name, created_at')
+          .order('created_at', { ascending: false })
+          .limit(5)
+
+        // Combine and sort activities
+        const activities: RecentActivity[] = []
+
+        if (recentCompletions) {
+          (recentCompletions as any[]).forEach(item => {
+            if (item.completed_at) {
+              activities.push({
+                id: item.id,
+                type: 'video_completed',
+                description: `Completed video: ${item.videos?.title || 'Unknown'}`,
+                user_name: item.users?.full_name || 'Unknown User',
+                timestamp: item.completed_at,
+              })
+            }
+          })
+        }
+
+        if (recentSubmissions) {
+          (recentSubmissions as any[]).forEach(item => {
+            activities.push({
+              id: item.id,
+              type: 'form_submitted',
+              description: `Submitted form: ${item.forms?.form_name || 'Unknown'}`,
+              user_name: item.users?.full_name || 'Unknown User',
+              timestamp: item.submitted_at,
+            })
+          })
+        }
+
+        if (recentUsers) {
+          (recentUsers as any[]).forEach(item => {
+            activities.push({
+              id: item.id,
+              type: 'user_registered',
+              description: 'New user registered',
+              user_name: item.full_name || 'Unknown User',
+              timestamp: item.created_at,
+            })
+          })
+        }
+
+        // Sort by timestamp and take top 10
+        recentActivity = activities
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, 10)
+
+        // Load admin notes
+        const { data: notesData } = await supabase
+          .from('admin_settings')
+          .select('value')
+          .eq('key', 'dashboard_notes')
+          .single()
+        
+        if (notesData && (notesData as any).value) {
+          setAdminNotes((notesData as any).value as string)
+        }
+      }
+
       setStats({
         pendingForms: pendingForms || 0,
         pendingUsers: pendingUsers || 0,
@@ -161,12 +268,13 @@ const DashboardPage = () => {
         trainingCompletion,
         pendingUsersList: pendingUsersList || [],
         pendingFormsList: pendingFormsList || [],
-        recentActivity: [],
+        recentActivity,
         totalVideos,
         completedVideos,
         totalDocuments,
         viewedDocuments,
         newAnnouncements,
+        pendingApplications,
       })
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
@@ -179,12 +287,57 @@ const DashboardPage = () => {
     try {
       const { error } = await supabase
         .from('users')
-        .update({ status: 'approved' })
+        .update({ status: 'approved' } as any)
         .eq('id', userId)
       if (error) throw error
       fetchDashboardStats()
     } catch (error) {
       console.error('Error approving user:', error)
+    }
+  }
+
+  const handleNotesChange = (value: string) => {
+    setAdminNotes(value)
+    
+    // Auto-save after 1 second of no typing
+    if (notesTimeoutRef.current) {
+      clearTimeout(notesTimeoutRef.current)
+    }
+    
+    notesTimeoutRef.current = setTimeout(() => {
+      saveNotes(value)
+    }, 1000)
+  }
+
+  const saveNotes = async (notes: string) => {
+    setSavingNotes(true)
+    try {
+      const { error } = await supabase
+        .from('admin_settings')
+        .upsert({ key: 'dashboard_notes', value: notes, updated_at: new Date().toISOString() } as any, { onConflict: 'key' })
+      
+      if (error) throw error
+      toast.success('Notes saved', { duration: 1500 })
+    } catch (error) {
+      console.error('Error saving notes:', error)
+      toast.error('Failed to save notes')
+    } finally {
+      setSavingNotes(false)
+    }
+  }
+
+  const getActivityIcon = (type: RecentActivity['type']) => {
+    switch (type) {
+      case 'video_completed':
+        return <GraduationCap className="w-4 h-4 text-purple-600" />
+      case 'form_submitted':
+        return <FileText className="w-4 h-4 text-orange-600" />
+      case 'quiz_passed':
+        return <CheckCircle className="w-4 h-4 text-green-600" />
+      case 'user_registered':
+        return <UserCheck className="w-4 h-4 text-blue-600" />
+      default:
+        return <Clock className="w-4 h-4 text-gray-600" />
     }
   }
 
@@ -600,36 +753,69 @@ const DashboardPage = () => {
         </div>
       )}
 
-      <Card>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Recent Activity
-        </h2>
-        {stats.recentActivity.length > 0 ? (
-          <div className="space-y-4">
-            {stats.recentActivity.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
-              >
-                <div className="p-2 bg-blue-100 rounded-full">
-                  <Clock className="w-4 h-4 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">{activity.description}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(activity.timestamp).toLocaleString()}
-                  </p>
-                </div>
+      {/* Recent Activity & Quick Notes - Admin Only */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Employee Activity */}
+          <Card>
+            <div className="flex items-center gap-2 mb-4">
+              <MessageSquare className="w-5 h-5 text-gray-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Recent Employee Activity</h2>
+            </div>
+            {stats.recentActivity.length > 0 ? (
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {stats.recentActivity.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                  >
+                    <div className="p-2 bg-gray-100 rounded-full">
+                      {getActivityIcon(activity.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{activity.user_name}</p>
+                      <p className="text-sm text-gray-600 truncate">{activity.description}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {formatTimeAgo(activity.timestamp)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>No recent activity</p>
-          </div>
-        )}
-      </Card>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Clock className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No recent activity</p>
+              </div>
+            )}
+          </Card>
+
+          {/* Quick Notes */}
+          <Card>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <StickyNote className="w-5 h-5 text-yellow-600" />
+                <h2 className="text-lg font-semibold text-gray-900">Quick Notes</h2>
+              </div>
+              {savingNotes && (
+                <span className="text-xs text-gray-500 flex items-center gap-1">
+                  <Save className="w-3 h-3 animate-pulse" />
+                  Saving...
+                </span>
+              )}
+            </div>
+            <textarea
+              value={adminNotes}
+              onChange={(e) => handleNotesChange(e.target.value)}
+              placeholder="Write notes here... (auto-saves)"
+              className="w-full h-64 p-3 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+            <p className="text-xs text-gray-400 mt-2">
+              Notes are automatically saved as you type
+            </p>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
