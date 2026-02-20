@@ -33,6 +33,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Prevent multiple initializations
     if (get().initialized) return
     
+    // Set up auth state listener FIRST
+    supabase.auth.onAuthStateChange(async (_event, session) => {
+      set({ user: session?.user ?? null, session })
+      if (session?.user) {
+        await get().fetchProfile()
+      } else {
+        set({ profile: null })
+      }
+    })
+    
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
@@ -47,15 +57,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } finally {
       set({ initialized: true })
     }
-
-    supabase.auth.onAuthStateChange(async (_event, session) => {
-      set({ user: session?.user ?? null, session })
-      if (session?.user) {
-        await get().fetchProfile()
-      } else {
-        set({ profile: null })
-      }
-    })
   },
 
   fetchProfile: async () => {
