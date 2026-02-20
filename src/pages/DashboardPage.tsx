@@ -14,6 +14,10 @@ import {
   AlertCircle,
   CheckCircle,
   ArrowRight,
+  BookOpen,
+  Eye,
+  Target,
+  Calendar,
 } from 'lucide-react'
 
 interface PendingUser {
@@ -47,6 +51,12 @@ interface DashboardStats {
     description: string
     timestamp: string
   }>
+  // Employee-specific stats
+  totalVideos: number
+  completedVideos: number
+  totalDocuments: number
+  viewedDocuments: number
+  newAnnouncements: number
 }
 
 const DashboardPage = () => {
@@ -62,6 +72,11 @@ const DashboardPage = () => {
     pendingUsersList: [],
     pendingFormsList: [],
     recentActivity: [],
+    totalVideos: 0,
+    completedVideos: 0,
+    totalDocuments: 0,
+    viewedDocuments: 0,
+    newAnnouncements: 0,
   })
   const [loading, setLoading] = useState(true)
 
@@ -71,6 +86,7 @@ const DashboardPage = () => {
 
   const fetchDashboardStats = async () => {
     try {
+      // Admin stats
       const [
         { count: pendingForms },
         { count: pendingUsers },
@@ -89,16 +105,66 @@ const DashboardPage = () => {
         supabase.from('form_submissions').select('id, form_id, user_id, created_at, forms(title), users(full_name)').eq('status', 'pending').order('created_at', { ascending: false }).limit(5),
       ])
 
+      // Employee-specific stats
+      let totalVideos = 0
+      let completedVideos = 0
+      let totalDocuments = 0
+      let viewedDocuments = 0
+      let newAnnouncements = 0
+
+      if (profile?.id) {
+        // Get video progress
+        const { data: videos } = await supabase.from('videos').select('id')
+        const { data: videoProgress } = await supabase
+          .from('video_progress')
+          .select('video_id, completed')
+          .eq('user_id', profile.id)
+          .eq('completed', true)
+        
+        totalVideos = videos?.length || 0
+        completedVideos = videoProgress?.length || 0
+
+        // Get documents (advisories)
+        const { data: documents } = await supabase.from('advisories').select('id')
+        totalDocuments = documents?.length || 0
+        // For now, assume all viewed - you can add a document_views table later
+        viewedDocuments = 0
+
+        // Get announcements since last week (or implement last_login tracking)
+        const oneWeekAgo = new Date()
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+        const { data: recentAnnouncements } = await supabase
+          .from('announcements')
+          .select('id')
+          .gte('created_at', oneWeekAgo.toISOString())
+        
+        const { data: readAnnouncements } = await supabase
+          .from('announcement_reads')
+          .select('announcement_id')
+          .eq('user_id', profile.id)
+        
+        const readIds = new Set((readAnnouncements as { announcement_id: string }[] | null)?.map(r => r.announcement_id) || [])
+        newAnnouncements = (recentAnnouncements as { id: string }[] | null)?.filter(a => !readIds.has(a.id)).length || 0
+      }
+
+      // Calculate training completion percentage
+      const trainingCompletion = totalVideos > 0 ? Math.round((completedVideos / totalVideos) * 100) : 0
+
       setStats({
         pendingForms: pendingForms || 0,
         pendingUsers: pendingUsers || 0,
         totalUsers: totalUsers || 0,
         activeVideos: activeVideos || 0,
         unreadAnnouncements: unreadAnnouncements || 0,
-        trainingCompletion: 75,
+        trainingCompletion,
         pendingUsersList: pendingUsersList || [],
         pendingFormsList: pendingFormsList || [],
         recentActivity: [],
+        totalVideos,
+        completedVideos,
+        totalDocuments,
+        viewedDocuments,
+        newAnnouncements,
       })
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
@@ -187,16 +253,176 @@ const DashboardPage = () => {
     )
   }
 
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  }
+
+  const formatDate = () => {
+    return new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
+  const pendingVideos = stats.totalVideos - stats.completedVideos
+  const pendingDocuments = stats.totalDocuments - stats.viewedDocuments
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Welcome back, {profile?.full_name}
-        </h1>
-        <p className="text-gray-600 mt-1">
-          Here's what's happening with your account today.
-        </p>
+      {/* Greeting with Date */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {getGreeting()}, {profile?.full_name?.split(' ')[0]}!
+          </h1>
+          <div className="flex items-center gap-2 text-gray-600 mt-1">
+            <Calendar className="w-4 h-4" />
+            <span>{formatDate()}</span>
+          </div>
+        </div>
       </div>
+
+      {/* Employee Progress Section */}
+      {!isAdmin && (
+        <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Target className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">Your Progress</h2>
+              <p className="text-sm text-gray-600">Track your completion status</p>
+            </div>
+          </div>
+
+          {/* Overall Progress Bar */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">Overall Completion</span>
+              <span className="text-lg font-bold text-blue-600">{stats.trainingCompletion}%</span>
+            </div>
+            <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500"
+                style={{ width: `${stats.trainingCompletion}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Progress Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Training Videos */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Video className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Training Videos</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {stats.completedVideos}/{stats.totalVideos}
+                  </p>
+                </div>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-purple-500 rounded-full"
+                  style={{ width: `${stats.totalVideos > 0 ? (stats.completedVideos / stats.totalVideos) * 100 : 0}%` }}
+                />
+              </div>
+              {pendingVideos > 0 && (
+                <p className="text-xs text-orange-600 mt-2 flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {pendingVideos} video{pendingVideos !== 1 ? 's' : ''} remaining
+                </p>
+              )}
+              {pendingVideos === 0 && stats.totalVideos > 0 && (
+                <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" />
+                  All videos completed!
+                </p>
+              )}
+            </div>
+
+            {/* Documents */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <BookOpen className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Documents</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {stats.totalDocuments}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => navigate('/documents')}
+                className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-2"
+              >
+                <Eye className="w-3 h-3" />
+                View documents
+              </button>
+            </div>
+
+            {/* Announcements */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Bell className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">New Announcements</p>
+                  <p className="text-xl font-bold text-gray-900">
+                    {stats.newAnnouncements}
+                  </p>
+                </div>
+              </div>
+              {stats.newAnnouncements > 0 ? (
+                <button 
+                  onClick={() => navigate('/announcements')}
+                  className="text-xs text-orange-600 hover:text-orange-800 flex items-center gap-1 mt-2"
+                >
+                  <AlertCircle className="w-3 h-3" />
+                  {stats.newAnnouncements} unread this week
+                </button>
+              ) : (
+                <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" />
+                  All caught up!
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Actions for Employee */}
+          <div className="mt-4 pt-4 border-t border-blue-200 flex gap-3">
+            <Button size="sm" onClick={() => navigate('/training')}>
+              <Video className="w-4 h-4 mr-1" />
+              Continue Training
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => navigate('/announcements')}>
+              <Bell className="w-4 h-4 mr-1" />
+              View Announcements
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Admin greeting (simplified) */}
+      {isAdmin && (
+        <div>
+          <p className="text-gray-600">
+            Here's what's happening with your account today.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards
