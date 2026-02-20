@@ -581,10 +581,10 @@ const DashboardPage = () => {
 
       {/* Pending Items Section */}
       {isAdmin && (stats.pendingUsers > 0 || stats.pendingForms > 0) && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-4">
-            <AlertCircle className="w-6 h-6 text-amber-600" />
-            <h2 className="text-lg font-semibold text-amber-900">Items Requiring Attention</h2>
+            <AlertCircle className="w-6 h-6 text-orange-600" />
+            <h2 className="text-lg font-semibold text-orange-900">Items Requiring Attention</h2>
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -774,7 +774,7 @@ const DashboardPage = () => {
           <Card>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <StickyNote className="w-5 h-5 text-yellow-600" />
+                <StickyNote className="w-5 h-5 text-blue-600" />
                 <h2 className="text-lg font-semibold text-gray-900">Quick Notes</h2>
               </div>
               {savingNotes && (
