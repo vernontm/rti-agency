@@ -82,8 +82,9 @@ const DashboardPage = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    setLoading(true)
     fetchDashboardStats()
-  }, [])
+  }, [effectiveRole])
 
   const fetchDashboardStats = async () => {
     try {
