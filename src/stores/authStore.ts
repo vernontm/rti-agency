@@ -30,14 +30,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   viewAsRole: null,
 
   initialize: async () => {
+    // Prevent multiple initializations
+    if (get().initialized) return
+    
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
         set({ user: session.user, session })
         await get().fetchProfile()
       }
-    } catch (error) {
-      console.error('Error initializing auth:', error)
+    } catch (error: any) {
+      // Ignore AbortError - happens during component unmount/remount
+      if (error?.name !== 'AbortError') {
+        console.error('Error initializing auth:', error)
+      }
     } finally {
       set({ initialized: true })
     }
