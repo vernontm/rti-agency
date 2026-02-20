@@ -65,7 +65,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   fetchProfile: async (retries = 3) => {
     const { user } = get()
-    if (!user) return
+    if (!user) {
+      console.log('fetchProfile: No user found')
+      return
+    }
+
+    console.log('fetchProfile: Fetching for user', user.id)
 
     for (let attempt = 0; attempt < retries; attempt++) {
       try {
@@ -75,29 +80,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           .eq('id', user.id)
           .single()
 
+        console.log('fetchProfile attempt', attempt + 1, '- data:', data, 'error:', error)
+
         if (error) {
-          // If it's an abort error, retry
-          if (error.message?.includes('AbortError') || error.code === '') {
+          // If it's an abort error or empty code, retry
+          if (error.message?.includes('AbortError') || error.code === '' || error.code === 'PGRST116') {
             if (attempt < retries - 1) {
+              console.log('fetchProfile: Retrying after error...')
               await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
               continue
             }
           }
-          console.error('Error fetching profile:', error)
+          console.error('Error fetching profile (final):', error)
           return
         }
 
-        set({ profile: data })
-        return
+        if (data) {
+          console.log('fetchProfile: Success, setting profile')
+          set({ profile: data })
+          return
+        }
       } catch (e: any) {
+        console.error('fetchProfile exception:', e)
         if (e?.name === 'AbortError' && attempt < retries - 1) {
           await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
           continue
         }
-        console.error('Error fetching profile:', e)
         return
       }
     }
+    console.log('fetchProfile: All retries exhausted')
   },
 
   signIn: async (email: string, password: string) => {
