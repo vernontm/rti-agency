@@ -60,8 +60,9 @@ interface DashboardStats {
 }
 
 const DashboardPage = () => {
-  const { profile } = useAuthStore()
+  const { profile, getEffectiveRole } = useAuthStore()
   const navigate = useNavigate()
+  const effectiveRole = getEffectiveRole()
   const [stats, setStats] = useState<DashboardStats>({
     pendingForms: 0,
     pendingUsers: 0,
@@ -200,7 +201,7 @@ const DashboardPage = () => {
     return 'Just now'
   }
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = effectiveRole === 'admin'
 
   const statCards = [
     {
